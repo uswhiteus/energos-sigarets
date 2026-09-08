@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
 
 import Header from "./components/Header";
 import BottomNav from "./components/BottomNav";
 import Popup from "./components/Popup";
+import ReasonModal from "./components/ReasonModal";
+import UrgeTimer from "./components/UrgeTimer";
 
 import Home from "./pages/Home";
 import History from "./pages/History";
@@ -10,58 +12,155 @@ import Stats from "./pages/Stats";
 import Settings from "./pages/Settings";
 
 import { loadData, saveData } from "./utils/storage";
+import {
+  getTodayKey,
+  getMinutesBetween,
+  formatInterval,
+} from "./utils/dates";
+import {
+  getTodayEntries,
+  getCigarettes,
+  getEnergy,
+  getEnergyMl,
+} from "./utils/statistics";
+import { getWarning } from "./utils/warnings";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("home");
 
   const [data, setData] = useState(() => loadData());
 
-  const { history, settings } = data;
-
   const [popup, setPopup] = useState(null);
 
-  useEffect(() => {
-    saveData(data);
-  }, [data]);
+  const [showReasonModal, setShowReasonModal] =
+    useState(false);
 
-  const setSettings = (update) => {
-    setData((prev) => ({
-      ...prev,
-      settings:
-        typeof update === "function"
-          ? update(prev.settings)
-          : update,
-    }));
+  const [showUrgeTimer, setShowUrgeTimer] =
+    useState(false);
+
+  const todayKey = getTodayKey();
+
+  const todayEntries = useMemo(
+    () => getTodayEntries(data.history, todayKey),
+    [data.history, todayKey]
+  );
+
+  const cigaretteEntries = useMemo(
+    () => getCigarettes(todayEntries),
+    [todayEntries]
+  );
+
+  const energyEntries = useMemo(
+    () => getEnergy(todayEntries),
+    [todayEntries]
+  );
+
+  const energyMl = useMemo(
+    () => getEnergyMl(todayEntries),
+    [todayEntries]
+  );
+
+  const cigaretteCount = cigaretteEntries.length;
+  const energyCount = energyEntries.length;
+
+  const { settings } = data;
+
+  const save = (newData) => {
+    setData(newData);
+    saveData(newData);
   };
 
-  const renderPage = () => {
-    switch (activeTab) {
-      case "history":
-        return <History history={history} />;
+  const addCigarette = (reason = "want") => {
+    const now = new Date();
+    const timestamp = now.toISOString();
 
-      case "stats":
-        return <Stats history={history} />;
+    const previous =
+      cigaretteEntries[cigaretteEntries.length - 1];
 
-      case "settings":
-        return (
-          <Settings
-            settings={settings}
-            setSettings={setSettings}
-          />
-        );
+    const interval = previous
+      ? getMinutesBetween(
+          previous.timestamp,
+          timestamp
+        )
+      : 0;
 
-      case "home":
-      default:
-        return <Home />;
+    const entry = {
+      id: `${timestamp}-cigarette`,
+      type: "cigarette",
+      timestamp,
+      reason,
+      interval,
+    };
+
+    const newHistory = {
+      ...data.history,
+      [todayKey]: [
+        ...(data.history[todayKey] || []),
+        entry,
+      ],
+    };
+
+    const newData = {
+      ...data,
+      history: newHistory,
+    };
+
+    save(newData);
+
+    const newCount = cigaretteCount + 1;
+
+    const warning = getWarning(
+      "cigarette",
+      newCount,
+      settings.cigaretteLimit
+    );
+
+    if (warning) {
+      setPopup(warning);
     }
   };
 
-  return (
-    <div className="app">
-      <Header />
+  const addEnergy = (amount) => {
+    const now = new Date();
+    const timestamp = now.toISOString();
 
-      <div className="app-content">
-        {renderPage()}
-      </div>
+    const entry = {
+      id: `${timestamp}-energy`,
+      type: "energy",
+      timestamp,
+      amount,
+    };
 
-     
+    const newHistory = {
+      ...data.history,
+      [todayKey]: [
+        ...(data.history[todayKey] || []),
+        entry,
+      ],
+    };
+
+    const newData = {
+      ...data,
+      history: newHistory,
+    };
+
+    save(newData);
+
+    const newCount = energyCount + 1;
+
+    const warning = getWarning(
+      "energy",
+      newCount,
+      settings.energyLimit
+    );
+
+    if (warning) {
+      setPopup(warning);
+    }
+  };
+
+  const handleCigaretteClick = () => {
+    setShowReasonModal(true);
+  };
+
+  const
