@@ -1,73 +1,30 @@
 import React from "react";
 
+import { getTodayKey, formatInterval } from "../utils/dates";
+
+import {
+  getTodayEntries,
+  getCigarettes,
+  getEnergy,
+  getEnergyMl,
+  getAverageCigaretteInterval,
+  getReasonStats,
+} from "../utils/statistics";
+
 export default function Stats({ history = {} }) {
-  const today = new Date().toISOString().split("T")[0];
-  const todayEntries = history[today] || [];
+  const today = getTodayKey();
 
-  const cigarettes = todayEntries.filter(
-    (entry) => entry.type === "cigarette"
-  );
+  const entries = getTodayEntries(history, today);
 
-  const energy = todayEntries.filter(
-    (entry) => entry.type === "energy"
-  );
+  const cigarettes = getCigarettes(entries);
+  const energy = getEnergy(entries);
 
-  const energyMl = energy.reduce(
-    (total, entry) => total + (Number(entry.amount) || 0),
-    0
-  );
-
-  const intervals = cigarettes
-    .map((entry) => Number(entry.interval))
-    .filter((interval) => interval > 0);
+  const energyMl = getEnergyMl(entries);
 
   const averageInterval =
-    intervals.length > 0
-      ? Math.round(
-          intervals.reduce((sum, value) => sum + value, 0) /
-            intervals.length
-        )
-      : 0;
+    getAverageCigaretteInterval(entries);
 
-  const formatInterval = (minutes) => {
-    if (!minutes) return "—";
-
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-
-    if (hours === 0) {
-      return `${mins} мин`;
-    }
-
-    if (mins === 0) {
-      return `${hours} ч`;
-    }
-
-    return `${hours} ч ${mins} мин`;
-  };
-
-  const reasonNames = {
-    want: "Просто захотелось",
-    stress: "Стресс",
-    tired: "Усталость",
-    food: "После еды",
-    company: "За компанию",
-    habit: "По привычке",
-    alcohol: "После алкоголя",
-    other: "Другое",
-  };
-
-  const reasonStats = {};
-
-  cigarettes.forEach((entry) => {
-    const reason = entry.reason || "other";
-
-    reasonStats[reason] =
-      (reasonStats[reason] || 0) + 1;
-  });
-
-  const reasons = Object.entries(reasonStats)
-    .sort((a, b) => b[1] - a[1]);
+  const reasons = getReasonStats(entries);
 
   return (
     <main className="page">
@@ -80,9 +37,11 @@ export default function Stats({ history = {} }) {
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon">🚬</div>
+
           <div className="stat-value">
             {cigarettes.length}
           </div>
+
           <div className="stat-label">
             Сигарет сегодня
           </div>
@@ -90,9 +49,11 @@ export default function Stats({ history = {} }) {
 
         <div className="stat-card">
           <div className="stat-icon">⚡</div>
+
           <div className="stat-value">
             {energy.length}
           </div>
+
           <div className="stat-label">
             Энергетиков сегодня
           </div>
@@ -100,9 +61,11 @@ export default function Stats({ history = {} }) {
 
         <div className="stat-card">
           <div className="stat-icon">🥤</div>
+
           <div className="stat-value">
             {energyMl}
           </div>
+
           <div className="stat-label">
             Мл энергетика
           </div>
@@ -110,9 +73,11 @@ export default function Stats({ history = {} }) {
 
         <div className="stat-card">
           <div className="stat-icon">⏱️</div>
+
           <div className="stat-value">
-            {formatInterval(averageInterval)}
+            {formatInterval(averageInterval) || "—"}
           </div>
+
           <div className="stat-label">
             Средний интервал
           </div>
@@ -128,37 +93,29 @@ export default function Stats({ history = {} }) {
           </div>
         ) : (
           <div className="reason-stats">
-            {reasons.map(([reason, count]) => {
-              const percentage = Math.round(
-                (count / cigarettes.length) * 100
-              );
+            {reasons.map((item) => (
+              <div
+                className="reason-stat"
+                key={item.reason}
+              >
+                <div className="reason-stat-header">
+                  <span>{item.label}</span>
 
-              return (
-                <div
-                  className="reason-stat"
-                  key={reason}
-                >
-                  <div className="reason-stat-header">
-                    <span>
-                      {reasonNames[reason] || "Другое"}
-                    </span>
-
-                    <strong>
-                      {count} ({percentage}%)
-                    </strong>
-                  </div>
-
-                  <div className="progress-bar">
-                    <div
-                      className="progress-bar-fill"
-                      style={{
-                        width: `${percentage}%`,
-                      }}
-                    />
-                  </div>
+                  <strong>
+                    {item.count} ({item.percentage}%)
+                  </strong>
                 </div>
-              );
-            })}
+
+                <div className="progress-bar">
+                  <div
+                    className="progress-bar-fill"
+                    style={{
+                      width: `${item.percentage}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>
