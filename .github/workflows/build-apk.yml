@@ -8,34 +8,58 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - run: npm install
-
-      - run: npm install @capacitor/core @capacitor/cli @capacitor/android
-
-      - run: npm run build
-
-      - run: npx cap init "Мой контроль" "com.mycontrol.app" --web-dir=dist
-
-      - run: npx cap add android
-
-      - run: npx cap copy
-
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Capacitor
+        run: |
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Initialize Capacitor
+        run: |
+          npx cap init "Мой контроль" "com.mycontrol.app" --web-dir=dist
+          npx cap add android
+          npx cap copy
+
+      - name: Force Kotlin version
+        working-directory: android
+        run: |
+          cat >> build.gradle <<'EOF'
+
+          allprojects {
+              configurations.all {
+                  resolutionStrategy.eachDependency { details ->
+                      if (details.requested.group == "org.jetbrains.kotlin") {
+                          details.useVersion("1.8.22")
+                      }
+                  }
+              }
+          }
+          EOF
 
       - name: Build APK
         working-directory: android
         run: ./gradlew assembleDebug
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: my-control-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
