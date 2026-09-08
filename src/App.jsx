@@ -12,17 +12,19 @@ import Stats from "./pages/Stats";
 import Settings from "./pages/Settings";
 
 import { loadData, saveData } from "./utils/storage";
+
 import {
   getTodayKey,
   getMinutesBetween,
-  formatInterval,
 } from "./utils/dates";
+
 import {
   getTodayEntries,
   getCigarettes,
   getEnergy,
   getEnergyMl,
 } from "./utils/statistics";
+
 import { getWarning } from "./utils/warnings";
 
 export default function App() {
@@ -41,7 +43,11 @@ export default function App() {
   const todayKey = getTodayKey();
 
   const todayEntries = useMemo(
-    () => getTodayEntries(data.history, todayKey),
+    () =>
+      getTodayEntries(
+        data.history,
+        todayKey
+      ),
     [data.history, todayKey]
   );
 
@@ -60,8 +66,11 @@ export default function App() {
     [todayEntries]
   );
 
-  const cigaretteCount = cigaretteEntries.length;
-  const energyCount = energyEntries.length;
+  const cigaretteCount =
+    cigaretteEntries.length;
+
+  const energyCount =
+    energyEntries.length;
 
   const { settings } = data;
 
@@ -75,7 +84,9 @@ export default function App() {
     const timestamp = now.toISOString();
 
     const previous =
-      cigaretteEntries[cigaretteEntries.length - 1];
+      cigaretteEntries[
+        cigaretteEntries.length - 1
+      ];
 
     const interval = previous
       ? getMinutesBetween(
@@ -107,7 +118,8 @@ export default function App() {
 
     save(newData);
 
-    const newCount = cigaretteCount + 1;
+    const newCount =
+      cigaretteCount + 1;
 
     const warning = getWarning(
       "cigarette",
@@ -146,7 +158,8 @@ export default function App() {
 
     save(newData);
 
-    const newCount = energyCount + 1;
+    const newCount =
+      energyCount + 1;
 
     const warning = getWarning(
       "energy",
@@ -163,4 +176,111 @@ export default function App() {
     setShowReasonModal(true);
   };
 
-  const
+  const handleReasonSelect = (reason) => {
+    setShowReasonModal(false);
+    addCigarette(reason);
+  };
+
+  const setSettings = (update) => {
+    setData((prev) => {
+      const newSettings =
+        typeof update === "function"
+          ? update(prev.settings)
+          : update;
+
+      const newData = {
+        ...prev,
+        settings: newSettings,
+      };
+
+      saveData(newData);
+
+      return newData;
+    });
+  };
+
+  const renderPage = () => {
+    switch (activeTab) {
+      case "history":
+        return (
+          <History
+            history={data.history}
+          />
+        );
+
+      case "stats":
+        return (
+          <Stats
+            history={data.history}
+          />
+        );
+
+      case "settings":
+        return (
+          <Settings
+            settings={settings}
+            setSettings={setSettings}
+          />
+        );
+
+      case "home":
+      default:
+        return (
+          <Home
+            cigaretteCount={cigaretteCount}
+            energyCount={energyCount}
+            energyMl={energyMl}
+            cigaretteLimit={
+              settings.cigaretteLimit
+            }
+            energyLimit={
+              settings.energyLimit
+            }
+            onAddCigarette={
+              handleCigaretteClick
+            }
+            onAddEnergy={addEnergy}
+            onUrge={() =>
+              setShowUrgeTimer(true)
+            }
+          />
+        );
+    }
+  };
+
+  return (
+    <div className="app">
+      <Header />
+
+      <div className="app-content">
+        {renderPage()}
+      </div>
+
+      <BottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
+
+      <Popup
+        message={popup}
+        onClose={() => setPopup(null)}
+      />
+
+      <ReasonModal
+        isOpen={showReasonModal}
+        onSelect={handleReasonSelect}
+        onClose={() =>
+          setShowReasonModal(false)
+        }
+      />
+
+      {showUrgeTimer && (
+        <UrgeTimer
+          onClose={() =>
+            setShowUrgeTimer(false)
+          }
+        />
+      )}
+    </div>
+  );
+}
