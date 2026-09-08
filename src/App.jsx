@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import Header from "./components/Header";
 import BottomNav from "./components/BottomNav";
@@ -9,22 +9,30 @@ import History from "./pages/History";
 import Stats from "./pages/Stats";
 import Settings from "./pages/Settings";
 
+import { loadData, saveData } from "./utils/storage";
+
 export default function App() {
   const [activeTab, setActiveTab] = useState("home");
 
-  const [history, setHistory] = useState({});
+  const [data, setData] = useState(() => loadData());
 
-  const [settings, setSettings] = useState({
-    cigaretteLimit: 10,
-    energyLimit: 2,
-    cigarettePrice: 250,
-    energyPrice: 100,
-    reductionEnabled: false,
-    reductionStep: 1,
-    reductionDays: 7,
-  });
+  const { history, settings } = data;
 
   const [popup, setPopup] = useState(null);
+
+  useEffect(() => {
+    saveData(data);
+  }, [data]);
+
+  const setSettings = (update) => {
+    setData((prev) => ({
+      ...prev,
+      settings:
+        typeof update === "function"
+          ? update(prev.settings)
+          : update,
+    }));
+  };
 
   const renderPage = () => {
     switch (activeTab) {
@@ -56,15 +64,4 @@ export default function App() {
         {renderPage()}
       </div>
 
-      <BottomNav
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
-
-      <Popup
-        message={popup}
-        onClose={() => setPopup(null)}
-      />
-    </div>
-  );
-}
+     
