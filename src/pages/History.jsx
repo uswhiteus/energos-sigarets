@@ -10,11 +10,13 @@ import { getReasonLabel } from "../utils/reasons";
 
 export default function History({ history = {} }) {
   const today = getTodayKey();
+
   const todayEntries = history[today] || [];
 
   const sortedEntries = [...todayEntries].sort(
     (a, b) =>
-      new Date(b.timestamp) - new Date(a.timestamp)
+      new Date(b.timestamp) -
+      new Date(a.timestamp)
   );
 
   return (
@@ -27,13 +29,15 @@ export default function History({ history = {} }) {
 
       {sortedEntries.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">📋</div>
+          <div className="empty-state-icon">
+            📋
+          </div>
 
           <h3>Пока пусто</h3>
 
           <p>
-            Добавленные сигареты и энергетики появятся
-            здесь.
+            Добавленные сигареты и энергетики
+            появятся здесь.
           </p>
         </div>
       ) : (
@@ -68,14 +72,40 @@ export default function History({ history = {} }) {
                   <div className="history-item-details">
                     {formatTime(entry.timestamp)}
 
-                    {isCigarette && entry.reason && (
-                      <>
-                        {" • "}
-                        {getReasonLabel(entry.reason)}
-                      </>
-                    )}
+                    {isCigarette &&
+                      entry.reason && (
+                        <>
+                          {" • "}
+                          {getReasonLabel(
+                            entry.reason
+                          )}
+                        </>
+                      )}
 
-                    {!isCigarette && entry.amount && (
-                      <>
-                        {" • "}
-                        {entry.amount}
+                    {!isCigarette &&
+                      entry.amount && (
+                        <>
+                          {" • "}
+                          {entry.amount} мл
+                        </>
+                      )}
+                  </div>
+
+                  {isCigarette &&
+                    entry.interval > 0 && (
+                      <div className="history-item-interval">
+                        Интервал:{" "}
+                        {formatInterval(
+                          entry.interval
+                        )}
+                      </div>
+                    )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </main>
+  );
+}
