@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { LocalNotifications } from "@capacitor/local-notifications";
 
 import Header from "./components/Header";
 import BottomNav from "./components/BottomNav";
