@@ -74,6 +74,42 @@ export default function App() {
     energyEntries.length;
 
   const { settings } = data;
+const setupNotification = async () => {
+  try {
+    const permission =
+      await LocalNotifications.requestPermissions();
+
+    if (permission.display !== "granted") {
+      return;
+    }
+
+    await LocalNotifications.createChannel({
+      id: "habit-control",
+      name: "Сиги и энергосы",
+      description: "Быстрое добавление сигарет и энергетиков",
+      importance: 4,
+      visibility: 1,
+    });
+
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: 1001,
+          title: "Сиги и энергосы",
+          body: "Быстро добавить употребление",
+          channelId: "habit-control",
+          ongoing: true,
+          autoCancel: false,
+        },
+      ],
+    });
+  } catch (error) {
+    console.error(
+      "Ошибка уведомления:",
+      error
+    );
+  }
+};
 
   const save = (newData) => {
     setData(newData);
