@@ -34,7 +34,7 @@ jobs:
 
       - name: Initialize Capacitor
         run: |
-          npx cap init "Мой контроль" "com.mycontrol.app" --web-dir=dist
+          npx cap init "Сиги и энергосы" "com.mycontrol.app" --web-dir=dist
           npx cap add android
           npx cap copy
 
