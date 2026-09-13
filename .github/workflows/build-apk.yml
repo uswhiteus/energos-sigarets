@@ -38,6 +38,7 @@ jobs:
           npx cap init "Сиги и энергосы" "com.mycontrol.app" --web-dir=dist
           npx cap add android
           npx cap copy
+npx cap sync android
 
       - name: Force Kotlin version
         working-directory: android
