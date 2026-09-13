@@ -25,10 +25,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-   - name: Install Capacitor
-  run: |
-    npm install @capacitor/core @capacitor/cli @capacitor/android
-    npm install @capacitor/local-notifications
+      - name: Install Capacitor
+        run: |
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/local-notifications
 
       - name: Build web app
         run: npm run build
@@ -38,7 +38,7 @@ jobs:
           npx cap init "Сиги и энергосы" "com.mycontrol.app" --web-dir=dist
           npx cap add android
           npx cap copy
-npx cap sync android
+          npx cap sync android
 
       - name: Force Kotlin version
         working-directory: android
