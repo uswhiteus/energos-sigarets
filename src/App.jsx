@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+
 import { LocalNotifications } from "@capacitor/local-notifications";
 
 import Header from "./components/Header";
@@ -74,42 +75,6 @@ export default function App() {
     energyEntries.length;
 
   const { settings } = data;
-const setupNotification = async () => {
-  try {
-    const permission =
-      await LocalNotifications.requestPermissions();
-
-    if (permission.display !== "granted") {
-      return;
-    }
-
-    await LocalNotifications.createChannel({
-      id: "habit-control",
-      name: "Сиги и энергосы",
-      description: "Быстрое добавление сигарет и энергетиков",
-      importance: 4,
-      visibility: 1,
-    });
-
-    await LocalNotifications.schedule({
-      notifications: [
-        {
-          id: 1001,
-          title: "Сиги и энергосы",
-          body: "Быстро добавить употребление",
-          channelId: "habit-control",
-          ongoing: true,
-          autoCancel: false,
-        },
-      ],
-    });
-  } catch (error) {
-    console.error(
-      "Ошибка уведомления:",
-      error
-    );
-  }
-};
 
   const save = (newData) => {
     setData(newData);
@@ -208,6 +173,94 @@ const setupNotification = async () => {
       setPopup(warning);
     }
   };
+
+  useEffect(() => {
+    const setupNotifications = async () => {
+      try {
+        const permission =
+          await LocalNotifications.requestPermissions();
+
+        if (permission.display !== "granted") {
+          return;
+        }
+
+        await LocalNotifications.createChannel({
+          id: "habit-control",
+          name: "Сиги и энергосы",
+          description:
+            "Быстрое добавление сигарет и энергетиков",
+          importance: 4,
+          visibility: 1,
+        });
+
+        await LocalNotifications.registerActionTypes({
+          types: [
+            {
+              id: "HABIT_ACTIONS",
+              actions: [
+                {
+                  id: "ADD_CIGARETTE",
+                  title: "🚬 Сигарета",
+                },
+                {
+                  id: "ADD_ENERGY",
+                  title: "⚡ Энергетик",
+                },
+              ],
+            },
+          ],
+        });
+
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: 1001,
+              title: "Сиги и энергосы",
+              body: "Быстро добавить употребление",
+              channelId: "habit-control",
+              ongoing: true,
+              autoCancel: false,
+              actionTypeId: "HABIT_ACTIONS",
+            },
+          ],
+        });
+      } catch (error) {
+        console.error(
+          "Ошибка уведомлений:",
+          error
+        );
+      }
+    };
+
+    setupNotifications();
+
+    const listener =
+      LocalNotifications.addListener(
+        "localNotificationActionPerformed",
+        (notificationAction) => {
+          const actionId =
+            notificationAction.actionId;
+
+          if (
+            actionId === "ADD_CIGARETTE"
+          ) {
+            addCigarette("notification");
+          }
+
+          if (
+            actionId === "ADD_ENERGY"
+          ) {
+            addEnergy(250);
+          }
+        }
+      );
+
+    return () => {
+      listener.then((handle) =>
+        handle.remove()
+      );
+    };
+  }, []);
 
   const handleCigaretteClick = () => {
     setShowReasonModal(true);
